@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>이 회의, 진짜 참석해야 하나요?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --surface: #F7F8FA;
+    --surface-line: #DEE2EA;
+    --text: #1D2230;
+    --text-muted: #7B8296;
+    --green: #1C8C5C;
+    --green-soft: #DEF5EA;
+    --yellow: #E08900;
+    --yellow-soft: #FFF0D6;
+    --red: #E5484D;
+    --red-soft: #FCE2E3;
+    --accent: #3B4C6B;
+    --accent-soft: #E6EAF1;
+    --shadow: 0 18px 40px -22px rgba(29,34,48,0.35);
+    --radius: 22px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161C;
+      --surface: #1D2028;
+      --surface-line: #333744;
+      --text: #ECEEF3;
+      --text-muted: #A6ABBB;
+      --green-soft: #163A2C;
+      --yellow-soft: #3A2E14;
+      --red-soft: #402024;
+      --accent-soft: #262B3A;
+      --shadow: 0 18px 40px -18px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161C;
+    --surface: #1D2028;
+    --surface-line: #333744;
+    --text: #ECEEF3;
+    --text-muted: #A6ABBB;
+    --green-soft: #163A2C;
+    --yellow-soft: #3A2E14;
+    --red-soft: #402024;
+    --accent-soft: #262B3A;
+    --shadow: 0 18px 40px -18px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Gowun Dodum', sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap {
+    max-width: 480px; margin: 0 auto; padding: 28px 20px 48px;
+    min-height: 100%; display: flex; flex-direction: column;
+  }
+  .brand {
+    display: flex; align-items: baseline; gap: 8px; margin-bottom: 22px;
+    color: var(--text-muted); font-size: 13px; letter-spacing: 0.02em;
+  }
+  .brand b { color: var(--text); font-family: 'Black Han Sans', sans-serif; font-size: 15px; }
+
+  .screen { display: none; flex: 1; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  .receipt {
+    background: var(--surface);
+    border: 1px solid var(--surface-line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 34px 26px 28px;
+    position: relative;
+  }
+  .receipt::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: -11px; height: 22px;
+    background:
+      linear-gradient(-45deg, var(--bg) 8px, transparent 0),
+      linear-gradient(45deg, var(--bg) 8px, transparent 0);
+    background-size: 16px 22px;
+    background-position: left bottom;
+  }
+  .tag {
+    display: inline-block; font-size: 12px; color: var(--accent);
+    background: var(--accent-soft); padding: 5px 11px; border-radius: 999px;
+    margin-bottom: 14px; font-weight: 700;
+  }
+  h1.title {
+    font-family: 'Black Han Sans', sans-serif; font-weight: 400;
+    font-size: 23px; line-height: 1.45; margin: 0 0 14px;
+  }
+  .desc { color: var(--text-muted); font-size: 15px; line-height: 1.7; margin: 0 0 22px; }
+  .meta-line {
+    display: flex; gap: 14px; font-size: 13px; color: var(--text-muted);
+    border-top: 1px dashed var(--surface-line); padding-top: 16px; font-family: monospace;
+  }
+
+  .cta {
+    margin-top: 26px; width: 100%; border: none; background: var(--text); color: var(--bg);
+    font-family: 'Gowun Dodum', sans-serif; font-weight: 700; font-size: 17px;
+    padding: 17px; border-radius: 16px; cursor: pointer;
+  }
+  .cta:focus-visible, .opt:focus-visible, .ghost-btn:focus-visible {
+    outline: 3px solid var(--accent); outline-offset: 2px;
+  }
+  .cta:active { transform: scale(0.98); }
+
+  .signal-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 22px; }
+  .signal-chip { text-align: center; padding: 12px 4px; border-radius: 12px; font-size: 22px; }
+  .signal-chip span { display: block; font-size: 10.5px; margin-top: 5px; color: var(--text-muted); line-height: 1.4; }
+
+  .progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .progress-track { flex: 1; height: 6px; background: var(--surface-line); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width .35s ease; }
+  .q-count { font-family: monospace; font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+  .q-text {
+    font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 19px;
+    line-height: 1.5; margin: 4px 0 24px;
+  }
+  .options { display: flex; flex-direction: column; gap: 11px; }
+  .opt {
+    text-align: left; background: var(--surface); border: 1.5px solid var(--surface-line);
+    border-radius: 15px; padding: 16px; font-family: 'Gowun Dodum', sans-serif;
+    font-size: 14.8px; line-height: 1.55; color: var(--text); cursor: pointer;
+    transition: border-color .15s ease, transform .1s ease;
+  }
+  .opt:hover { border-color: var(--accent); }
+  .opt:active { transform: scale(0.985); }
+
+  .back-link {
+    background: none; border: none; color: var(--text-muted);
+    font-family: 'Gowun Dodum', sans-serif; font-size: 13px;
+    padding: 0; margin-top: 20px; cursor: pointer; align-self: flex-start; text-decoration: underline;
+  }
+
+  .result-emoji { font-size: 54px; line-height: 1; margin-bottom: 10px; }
+  .result-kicker { color: var(--text-muted); font-size: 13px; margin-bottom: 6px; font-family: monospace; }
+  .result-title {
+    font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 23px; margin: 0 0 10px;
+  }
+  .result-line { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .result-body {
+    font-size: 15px; line-height: 1.75; color: var(--text-muted); margin-bottom: 26px;
+    background: var(--bg); border: 1px dashed var(--surface-line); border-radius: 12px; padding: 14px;
+  }
+
+  .gauge { margin-bottom: 8px; }
+  .gauge-track {
+    position: relative; height: 14px; border-radius: 999px; overflow: visible;
+    background: linear-gradient(to right,
+      var(--green) 0%, var(--green) 31.25%,
+      var(--yellow) 31.25%, var(--yellow) 64.5%,
+      var(--red) 64.5%, var(--red) 100%);
+  }
+  .gauge-marker {
+    position: absolute; top: 50%; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--surface); border: 3px solid var(--text);
+    transform: translate(-50%, -50%); box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .gauge-labels {
+    display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);
+    margin-top: 8px; font-family: monospace;
+  }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 22px; }
+  .ghost-btn {
+    flex: 1; padding: 15px; border-radius: 14px; border: 1.5px solid var(--surface-line);
+    background: transparent; color: var(--text); font-family: 'Gowun Dodum', sans-serif;
+    font-weight: 700; font-size: 14.5px; cursor: pointer;
+  }
+  .ghost-btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(10px);
+    background: var(--text); color: var(--bg); padding: 11px 18px; border-radius: 999px;
+    font-size: 13.5px; opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><b>회의 참석 신호등</b> · 8문항</div>
+
+  <!-- 인트로 -->
+  <section class="screen active" id="screen-intro">
+    <div class="receipt">
+      <span class="tag">직장/회의 🗓️</span>
+      <h1 class="title">이 회의, 진짜 꼭<br>들어가야 하는<br>'참석'인가요?</h1>
+      <p class="desc">캘린더 초대를 수락하기 전, 8가지 질문으로 이 회의가 참석인지 시간 낭비인지 냉정하게 판정해드립니다.</p>
+      <div class="meta-line">
+        <span>문항 08</span><span>·</span><span>약 2분</span><span>·</span><span>판정 3단계</span>
+      </div>
+    </div>
+
+    <div class="signal-preview">
+      <div class="signal-chip" style="background:var(--green-soft)">🟢<span>반드시 참석</span></div>
+      <div class="signal-chip" style="background:var(--yellow-soft)">🟡<span>조건부 조율</span></div>
+      <div class="signal-chip" style="background:var(--red-soft)">🔴<span>칼거절</span></div>
+    </div>
+
+    <button class="cta" id="btn-start">판정 시작하기</button>
+  </section>
+
+  <!-- 퀴즈 -->
+  <section class="screen" id="screen-quiz">
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="q-count" id="q-count">Q1/8</div>
+    </div>
+    <p class="q-text" id="q-text"></p>
+    <div class="options" id="options"></div>
+    <button class="back-link" id="btn-back">← 이전 질문</button>
+  </section>
+
+  <!-- 결과 -->
+  <section class="screen" id="screen-result">
+    <div class="receipt" id="result-card" style="margin-bottom:0;">
+      <div class="result-emoji" id="result-emoji"></div>
+      <div class="result-kicker" id="result-kicker"></div>
+      <h2 class="result-title" id="result-title"></h2>
+      <p class="result-line" id="result-line"></p>
+
+      <div class="gauge">
+        <div class="gauge-track">
+          <div class="gauge-marker" id="gauge-marker"></div>
+        </div>
+        <div class="gauge-labels"><span>반드시 참석</span><span>조건부 조율</span><span>칼거절</span></div>
+      </div>
+
+      <p class="result-body" id="result-body"></p>
+    </div>
+    <div class="btn-row">
+      <button class="ghost-btn" id="btn-retry">다시 진단하기</button>
+      <button class="ghost-btn primary" id="btn-save-image">결과 이미지 저장</button>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast">저장됐어요</div>
+
+<script>
+(function () {
+  const VERDICTS = [
+    { min: 8, max: 15, emoji: '🟢', name: '반드시 참석', color: 'var(--green)',
+      line: '이 회의는 당신이 주인공입니다! 당장 들어가서 목소리를 내세요.',
+      body: '안건의 핵심 이해관계자이자 의사결정의 주체입니다. 빠지면 프로젝트가 멈추니 노트북을 챙기고 당장 회의실로 향하세요!' },
+    { min: 16, max: 23, emoji: '🟡', name: '조건부 조율 및 대리 참석', color: 'var(--yellow)',
+      line: '전체 참석은 낭비! 핵심 안건만 듣고 빠지거나 대타를 세우세요.',
+      body: '처음부터 끝까지 앉아있을 필요는 없습니다. 필요한 파트만 잠깐 발언하거나, 팀 내 다른 동료에게 대리 참석을 요청하는 것을 조율해 보세요.' },
+    { min: 24, max: 32, emoji: '🔴', name: '칼거절 및 불참 선언', color: 'var(--red)',
+      line: 'STOP! 이 회의는 당신의 소중한 시간을 훔치는 영혼 파괴용 감옥입니다.',
+      body: '1초도 고민하지 말고 \'정중한 불참 사유(마감 업무 집중)\'를 메일로 남기거나 캘린더 거절 버튼을 누르세요. 그 시간에 실무를 끝내는 것이 이롭습니다!' },
+  ];
+
+  const QUESTIONS = [
+    { q: '이번 회의의 안건(Agenda)과 소집 목적은 얼마나 명확하게 공유되었나요?', opts: [
+      { w:1, text:'안건과 논의 목표가 100% 투명하고 명확하게 사전 공유되었다.' },
+      { w:2, text:'대략적인 주제만 적혀 있고 세부 내용은 들어가 봐야 안다.' },
+      { w:3, text:'제목만 덩그러니 있고 무슨 소리인지 잘 모르겠다.' },
+      { w:4, text:'안건도 없고 그냥 \'모여서 이야기하자\'는 식의 난민촌 회의다.' },
+    ]},
+    { q: '이 회의에서 결정을 내리거나 방향을 승인할 때, 당신의 \'권한\'이나 \'역할\'은 무엇인가요?', opts: [
+      { w:1, text:'내 결단이나 승인이 없으면 회의 자체가 진행되지 않는 핵심 의사결정자다.' },
+      { w:2, text:'실무 의견을 내거나 특정 파트의 현황을 보고해야 한다.' },
+      { w:3, text:'직접 말할 일은 거의 없고 그냥 앉아서 흐름만 파악하면 된다.' },
+      { w:4, text:'내가 왜 불려갔는지 도무지 알 수 없는 투명인간급 포지션이다.' },
+    ]},
+    { q: '이 회의에서 다루는 주제가 당신의 현재 주력 업무 및 핵심 성과와 얼마나 직결되나요?', opts: [
+      { w:1, text:'내 주력 프로젝트이자 이번 달 성과 평가에 직접적인 영향을 준다.' },
+      { w:2, text:'관련이 아주 없진 않지만, 내 일의 지엽적인 부분에 불과하다.' },
+      { w:3, text:'다른 팀 일 구경하는 수준이거나 간접적인 연관만 있다.' },
+      { w:4, text:'내 업무 영역과 1도 관련 없는 남의 나라 이야기다.' },
+    ]},
+    { q: '만약 당신이 이 회의에 참석하지 않고 불참한다면 어떤 일이 벌어질까요?', opts: [
+      { w:1, text:'프로젝트가 전면 중단되거나 치명적인 의사결정 공백이 생긴다.' },
+      { w:2, text:'나중에 따로 내용을 전달받아야 해서 약간의 번거로움이 생긴다.' },
+      { w:3, text:'다른 동료가 내 몫까지 충분히 커버해 줄 수 있다.' },
+      { w:4, text:'내가 빠졌는지도 아무도 모를 것이다. 완벽한 무풍지대다.' },
+    ]},
+    { q: '회의 성격으로 볼 때, 당신은 어떤 존재로 참여하게 되나요?', opts: [
+      { w:1, text:'회의를 주도하거나 핵심 솔루션을 제시해야 하는 발표자/주도자다.' },
+      { w:2, text:'실무적 피드백이나 데이터 검증을 위해 반드시 입을 열어야 한다.' },
+      { w:3, text:'구색 맞추기용이거나 혹시 모를 질문 대비용 예비 인력이다.' },
+      { w:4, text:'그냥 화면 한구석을 채워주는 \'병풍\' 또는 \'시간 떼우기용 관객\'이다.' },
+    ]},
+    { q: '이 회의에서 오갈 내용과 결과물을 굳이 \'실시간 미팅\'으로 해야만 하는가요?', opts: [
+      { w:1, text:'매 순간 치열한 공방과 실시간 피드백 조율이 필수적이다.' },
+      { w:2, text:'어느 정도 토론이 필요하긴 하지만 메신저나 문서로도 조율 가능하다.' },
+      { w:3, text:'핵심 결론만 메일이나 회의록으로 공유받아도 충분하다.' },
+      { w:4, text:'텍스트 한 줄(예: \'진행하시죠\')이면 끝날 걸 굳이 모여서 떠드는 꼴이다.' },
+    ]},
+    { q: '현재 당신의 마감 일정과 업무 잔여량(기회비용)은 어떤 상태인가요?', opts: [
+      { w:1, text:'여유가 넘쳐서 동료들과 노가다성 회의라도 하면서 쉬고 싶다.' },
+      { w:2, text:'바쁘긴 하지만 회의 한두 개쯤은 소화할 수 있는 마인드다.' },
+      { w:3, text:'발등에 불이 떨어져서 1분 1초가 아쉬운 비상 사태다.' },
+      { w:4, text:'지금 이 회의에 들어가는 시간은 내 남은 수명을 갉아먹는 형벌이다.' },
+    ]},
+    { q: '이 회의를 소집한 사람과의 관계나 조직 내 정치적 포지션은 어떤가요?', opts: [
+      { w:1, text:'우리 보스 직속 지시이거나 사내 최고 권력자의 절대 필참령이 떨어졌다.' },
+      { w:2, text:'안 가기엔 눈치가 보이거나 팀 내 도의상 얼굴은 비춰야 한다.' },
+      { w:3, text:'참석 여부를 자유롭게 선택할 수 있는 오픈된 회의다.' },
+      { w:4, text:'정치적 부담 없이 \'정중히 불참 사유를 밝히고 패스\'할 수 있는 프리한 분위기다.' },
+    ]},
+  ];
+
+  let current = 0;
+  let answers = []; // weight numbers
+  let shuffledCache = [];
+  let activeQuestions = QUESTIONS;
+
+  const screens = {
+    intro: document.getElementById('screen-intro'),
+    quiz: document.getElementById('screen-quiz'),
+    result: document.getElementById('screen-result'),
+  };
+  function show(name) {
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function renderQuestion() {
+    const qData = activeQuestions[current];
+    document.getElementById('q-count').textContent = 'Q' + (current + 1) + '/' + activeQuestions.length;
+    document.getElementById('progress-fill').style.width = ((current) / activeQuestions.length * 100) + '%';
+    document.getElementById('q-text').textContent = qData.q;
+    document.getElementById('btn-back').style.visibility = current === 0 ? 'hidden' : 'visible';
+
+    if (!shuffledCache[current]) {
+      shuffledCache[current] = shuffle(qData.opts);
+    }
+    const opts = shuffledCache[current];
+
+    const wrap = document.getElementById('options');
+    wrap.innerHTML = '';
+    opts.forEach(o => {
+      const btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.type = 'button';
+      btn.textContent = o.text;
+      btn.addEventListener('click', () => selectAnswer(o.w));
+      wrap.appendChild(btn);
+    });
+  }
+
+  function selectAnswer(weight) {
+    answers[current] = weight;
+    current += 1;
+    if (current >= activeQuestions.length) {
+      document.getElementById('progress-fill').style.width = '100%';
+      setTimeout(showResult, 150);
+    } else {
+      renderQuestion();
+    }
+  }
+
+  document.getElementById('btn-back').addEventListener('click', () => {
+    if (current > 0) {
+      current -= 1;
+      renderQuestion();
+    }
+  });
+
+  document.getElementById('btn-start').addEventListener('click', () => {
+    current = 0;
+    answers = [];
+    shuffledCache = [];
+    activeQuestions = shuffle(QUESTIONS);
+    show('quiz');
+    renderQuestion();
+  });
+
+  document.getElementById('btn-retry').addEventListener('click', () => {
+    current = 0;
+    answers = [];
+    shuffledCache = [];
+    show('intro');
+  });
+
+  function showResult() {
+    const total = answers.reduce((sum, w) => sum + w, 0);
+    const verdict = VERDICTS.find(v => total >= v.min && total <= v.max) || VERDICTS[1];
+
+    document.getElementById('result-emoji').textContent = verdict.emoji;
+    document.getElementById('result-kicker').textContent = '총점 ' + total + ' / 32';
+    document.getElementById('result-title').textContent = verdict.name;
+    document.getElementById('result-title').style.color = verdict.color;
+    document.getElementById('result-line').textContent = verdict.line;
+    document.getElementById('result-body').textContent = verdict.body;
+
+    const minScore = 8, maxScore = 32;
+    const pct = ((total - minScore) / (maxScore - minScore)) * 100;
+    document.getElementById('gauge-marker').style.left = pct + '%';
+
+    show('result');
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+
+  document.getElementById('btn-save-image').addEventListener('click', async () => {
+    const node = document.getElementById('result-card');
+    if (typeof html2canvas === 'undefined') {
+      showToast('이미지 생성 기능을 불러오지 못했어요. 잠시 후 다시 시도해주세요');
+      return;
+    }
+    try {
+      const bgColor = getComputedStyle(document.body).backgroundColor || '#ffffff';
+      const canvas = await html2canvas(node, { scale: 2, backgroundColor: bgColor, useCORS: true });
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = '회의참석_신호등_결과.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('이미지가 저장됐어요!');
+    } catch (e) {
+      showToast('이미지 저장에 실패했어요');
+    }
+  });
+})();
+</script>
+</body>
+</html>
